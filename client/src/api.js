@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Use environment variable for production, empty for dev proxy
-const baseURL = import.meta.env.VITE_API_URL || '';
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 const api = axios.create({
   baseURL,

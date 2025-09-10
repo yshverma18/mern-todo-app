@@ -3,17 +3,30 @@ import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
 
-dotenv.config();
+dotenv.config(); // Load local .env file
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || "*"
+}));
 app.use(express.json());
 
-// Schema & Model
+// --- Debugging logs ---
+console.log("=== ENVIRONMENT DEBUG ===");
+console.log("MONGODB_URI:", process.env.MONGODB_URI ? "LOADED ✅" : "MISSING ❌");
+console.log("MONGO_URI:", process.env.MONGO_URI ? "LOADED ✅" : "MISSING ❌");
+console.log("PORT:", process.env.PORT || "Using default 5000");
+console.log("========================");
+
+// --- Config ---
+const PORT = process.env.PORT || 5000;
+const URI = process.env.MONGODB_URI || process.env.MONGO_URI; // fallback support
+
+// --- Schema & Model ---
 const ItemSchema = new mongoose.Schema({ name: String });
 const Item = mongoose.model("Item", ItemSchema);
 
-// CRUD routes
+// --- Routes ---
 app.get("/api/items", async (req, res) => {
   const items = await Item.find();
   res.json(items);
@@ -44,11 +57,19 @@ app.delete("/api/items/:id", async (req, res) => {
   res.json({ success: true });
 });
 
-// Connect to MongoDB Atlas & start server
-const PORT = process.env.PORT || 5000;
-const URI = process.env.MONGO_URI; // put your Atlas URI in .env
+// --- MongoDB connection ---
+if (!URI) {
+  console.error("❌ No MongoDB URI found in environment variables!");
+  process.exit(1);
+}
 
 mongoose
   .connect(URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => app.listen(PORT, () => console.log(`🚀 Server running on ${PORT}`)))
-  .catch((err) => console.error("MongoDB connection error:", err));
+  .then(() => {
+    console.log("✅ MongoDB connected successfully");
+    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+  })
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err);
+    process.exit(1);
+  });
